@@ -10,7 +10,30 @@ fn main() -> Result<()> {
         "/users/ygina/cornflakes/cornflakes-libos");
     compiler.add_dependency(
         "mlx5_datapath::datapath::connection::Mlx5Connection")?;
-    compiler.add_dependency("cornflakes_libos::datapath::Datapath")?;
+    compiler.add_dependency("cornflakes_libos::datapath::{{Datapath, \
+        ReceivedPkt}}")?;
+
+    // ReceivedPkt
+    compiler.add_extern_c_function(
+        Some("ReceivedPkt_msg_id"),
+        "ReceivedPkt<Mlx5Connection>",
+        "msg_id",
+        Some(SelfArgType::Value),
+        vec![],
+        Some(ArgType::Primitive { ty: "u32".to_string() }),
+        false,
+    )?;
+    compiler.add_extern_c_function(
+        Some("ReceivedPkt_conn_id"),
+        "ReceivedPkt<Mlx5Connection>",
+        "conn_id",
+        Some(SelfArgType::Value),
+        vec![],
+        Some(ArgType::Primitive { ty: "usize".to_string() }),
+        false,
+    )?;
+
+    // Mlx5Connection
     compiler.add_extern_c_function(
         None,
         "Mlx5Connection",
