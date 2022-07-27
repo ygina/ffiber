@@ -1,9 +1,11 @@
+pub mod compiler;
 pub mod types;
 
 use color_eyre::eyre::Result;
 use types::{ArgType, SelfArgType, DerivedTrait};
 
 pub struct CDylibCompiler {
+    pub compiler: compiler::SerializationCompiler,
 }
 
 impl CDylibCompiler {
