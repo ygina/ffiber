@@ -1,0 +1,8 @@
+[package]
+name = "ffiber"
+version = "0.1.0"
+authors = ["Gina Yuan <gina.yuan@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+color-eyre = "0.5"
