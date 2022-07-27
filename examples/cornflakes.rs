@@ -3,9 +3,10 @@ use ffiber::types::{ArgType, SelfArgType};
 use color_eyre::eyre::Result;
 
 fn main() -> Result<()> {
-    let mut compiler = CDylibCompiler::new("mlx-datapath-c", ".");
-    compiler.add_crate("mlx5-datapath",
-        "{{ path = \"/users/ygina/cornflakes/mlx5-datapath\"}}")?;
+    let mut compiler = CDylibCompiler::new("mlx5-datapath", ".");
+    compiler.add_crate_path("mlx5-datapath",
+        "/users/ygina/cornflakes/mlx5-datapath");
+    /*
     compiler.add_dependency(
         "mlx5_datapath::datapath::connection::Mlx5Connection")?;
     compiler.add_extern_c_function(
@@ -43,6 +44,7 @@ fn main() -> Result<()> {
         None,
         false,
     )?;
+    */
     compiler.flush()?;
     Ok(())
 }

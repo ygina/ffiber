@@ -1,11 +1,17 @@
+mod codegen;
 pub mod compiler;
 pub mod types;
 
+use std::{fs, path::{Path, PathBuf}};
 use color_eyre::eyre::Result;
 use types::{ArgType, SelfArgType, DerivedTrait};
 
 pub struct CDylibCompiler {
     pub compiler: compiler::SerializationCompiler,
+    pub package_name: String,
+    pub package_name_c: String,
+    pub package_folder: PathBuf,
+    crates: Vec<String>,
 }
 
 impl CDylibCompiler {
@@ -13,20 +19,38 @@ impl CDylibCompiler {
     /// folder. The compiler will also generate a build.rs file that uses
     /// cbindgen to output a header file.
     pub fn new(
-        _package_name: &str,
-        _output_folder: &str,
+        package_name: &str,
+        output_folder: &str,
     ) -> Self {
-        unimplemented!()
+        let package_name = str::replace(package_name, "-", "_");
+        let package_name_c =
+            format!("{}-c", str::replace(&package_name, "_", "-"));
+        CDylibCompiler {
+            compiler: compiler::SerializationCompiler::new(),
+            package_folder:
+                Path::new(output_folder).join(&package_name_c).to_path_buf(),
+            package_name,
+            package_name_c,
+            crates: vec![],
+        }
     }
 
-    /// Add a crate with a specific version (or path to the crate) to the
-    /// Cargo.toml.
-    pub fn add_crate(
+    /// Add a specific version of a crate to the Cargo.toml.
+    pub fn add_crate_version(
         &mut self,
-        _crate_name: &str,
-        _version: &str,
-    ) -> Result<()> {
-        unimplemented!()
+        crate_name: &str,
+        version: &str,
+    ) {
+        self.crates.push(format!("{} = \"{}\"", crate_name, version));
+    }
+
+    /// Add a crate (based on the path to the crate) to the Cargo.toml.
+    pub fn add_crate_path(
+        &mut self,
+        crate_name: &str,
+        path: &str,
+    ) {
+        self.crates.push(format!("{} = {{ path = \"{}\" }}", crate_name, path));
     }
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.
@@ -79,7 +103,20 @@ impl CDylibCompiler {
     }
 
     /// Writes the cdylib crate to the output folder and runs rustfmt.
+    ///
+    /// package-name-c/
+    ///     src/
+    ///         lib.rs
+    ///     build.rs
+    ///     Cargo.toml
     pub fn flush(&mut self) -> Result<()> {
-        unimplemented!()
+        let src_folder = self.package_folder.join("src");
+        fs::create_dir_all(&src_folder)?;
+
+        codegen::gen_build_rs(&self.package_name, &self.package_folder)?;
+        codegen::gen_cargo_toml(&self.package_name, &self.package_folder,
+            &self.crates)?;
+        self.compiler.flush(&src_folder.join("lib.rs"))?;
+        Ok(())
     }
 }
