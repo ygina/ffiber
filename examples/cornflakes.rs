@@ -6,9 +6,11 @@ fn main() -> Result<()> {
     let mut compiler = CDylibCompiler::new("mlx5-datapath", ".");
     compiler.add_crate_path("mlx5-datapath",
         "/users/ygina/cornflakes/mlx5-datapath");
-    /*
+    compiler.add_crate_path("cornflakes-libos",
+        "/users/ygina/cornflakes/cornflakes-libos");
     compiler.add_dependency(
         "mlx5_datapath::datapath::connection::Mlx5Connection")?;
+    compiler.add_dependency("cornflakes_libos::datapath::Datapath")?;
     compiler.add_extern_c_function(
         None,
         "Mlx5Connection",
@@ -30,7 +32,7 @@ fn main() -> Result<()> {
             ("min_elts", ArgType::Primitive { ty: "usize".to_string() }),
         ],
         None,
-        false,
+        true,
     )?;
     compiler.add_extern_c_function(
         None,
@@ -42,9 +44,9 @@ fn main() -> Result<()> {
             ("min_elts", ArgType::Primitive { ty: "usize".to_string() }),
         ],
         None,
-        false,
+        true,
     )?;
-    */
+
     compiler.flush()?;
     Ok(())
 }

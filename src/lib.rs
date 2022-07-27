@@ -54,8 +54,9 @@ impl CDylibCompiler {
     }
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.
-    pub fn add_dependency(&mut self, _dependency: &str) -> Result<()> {
-        unimplemented!()
+    pub fn add_dependency(&mut self, dependency: &str) -> Result<()> {
+        self.compiler.add_dependency(dependency)?;
+        Ok(())
     }
 
     /// Adds an extern C function wrapper around a method on a struct.
@@ -74,15 +75,25 @@ impl CDylibCompiler {
     /// TODO: Parse these options directly from the function specification.
     pub fn add_extern_c_function(
         &mut self,
-        _extern_name: Option<&str>,
-        _struct_name: &str,
-        _func_call: &str,
-        _self_ty: Option<SelfArgType>,
-        _raw_args: Vec<(&str, ArgType)>,
-        _raw_ret: Option<ArgType>,
-        _use_error_code: bool,
+        extern_name: Option<&str>,
+        struct_name: &str,
+        func_call: &str,
+        self_ty: Option<SelfArgType>,
+        raw_args: Vec<(&str, ArgType)>,
+        raw_ret: Option<ArgType>,
+        use_error_code: bool,
     ) -> Result<()> {
-        unimplemented!()
+        codegen::add_extern_c_function(
+            &mut self.compiler,
+            extern_name,
+            struct_name,
+            func_call,
+            self_ty,
+            raw_args,
+            raw_ret,
+            use_error_code,
+        )?;
+        Ok(())
     }
 
     /// Adds functions for a C void pointer representing a Rust struct.
@@ -116,7 +127,10 @@ impl CDylibCompiler {
         codegen::gen_build_rs(&self.package_name, &self.package_folder)?;
         codegen::gen_cargo_toml(&self.package_name, &self.package_folder,
             &self.crates)?;
-        self.compiler.flush(&src_folder.join("lib.rs"))?;
+
+        let lib_file = src_folder.join("lib.rs");
+        self.compiler.flush(&lib_file)?;
+        compiler::run_rustfmt(&lib_file)?;
         Ok(())
     }
 }
