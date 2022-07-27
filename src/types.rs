@@ -1,9 +1,9 @@
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum ArgType {
-    Primitive { ty: String },
-    Struct { inner_ty: String },
-    Ref { inner_ty: String },
-    RefMut { inner_ty: String },
+    Primitive(String),
+    Struct { name: String, params: Vec<Box<ArgType>> },
+    Ref { ty: Box<ArgType> },
+    RefMut { ty: Box<ArgType> },
     Buffer,
 }
 
@@ -42,13 +42,28 @@ impl ArgType {
         }
     }
 
-    pub fn to_string(&self) -> &str {
+    pub fn to_c_str(&self) -> &str {
         match self {
-            ArgType::Primitive { ty } => ty,
+            ArgType::Primitive(ty) => ty,
             ArgType::Struct{..} => "*mut ::std::os::raw::c_void",
             ArgType::Ref{..} => "*mut ::std::os::raw::c_void",
             ArgType::RefMut{..} => "*mut ::std::os::raw::c_void",
             ArgType::Buffer => "*const ::std::os::raw::c_uchar",
+        }
+    }
+
+    pub fn to_rust_str(&self) -> String {
+        match self {
+            ArgType::Primitive(ty) => ty.clone(),
+            ArgType::Struct { name, params } => if params.is_empty() {
+                name.clone()
+            } else {
+                format!("{}<{}>", &name, params.iter().map(|p| p.to_rust_str())
+                    .collect::<Vec<_>>().join(", "))
+            },
+            ArgType::Ref { ty } => format!("&{}", &ty.to_rust_str()),
+            ArgType::RefMut { ty } => format!("&mut {}", &ty.to_rust_str()),
+            ArgType::Buffer => unimplemented!(),
         }
     }
 }

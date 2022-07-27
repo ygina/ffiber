@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         "msg_id",
         Some(SelfArgType::Value),
         vec![],
-        Some(ArgType::Primitive { ty: "u32".to_string() }),
+        Some(ArgType::Primitive("u32".to_string())),
         false,
     )?;
     compiler.add_extern_c_function(
@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         "conn_id",
         Some(SelfArgType::Value),
         vec![],
-        Some(ArgType::Primitive { ty: "usize".to_string() }),
+        Some(ArgType::Primitive("usize".to_string())),
         false,
     )?;
 
@@ -56,7 +56,7 @@ fn main() -> Result<()> {
         "set_copying_threshold",
         Some(SelfArgType::Mut),
         vec![
-            ("copying_threshold", ArgType::Primitive { ty: "usize".to_string() }),
+            ("copying_threshold", ArgType::Primitive("usize".to_string())),
         ],
         None,
         false,
@@ -67,8 +67,8 @@ fn main() -> Result<()> {
         "add_memory_pool",
         Some(SelfArgType::Mut),
         vec![
-            ("buf_size", ArgType::Primitive { ty: "usize".to_string() }),
-            ("min_elts", ArgType::Primitive { ty: "usize".to_string() }),
+            ("buf_size", ArgType::Primitive("usize".to_string())),
+            ("min_elts", ArgType::Primitive("usize".to_string())),
         ],
         None,
         true,
@@ -79,8 +79,8 @@ fn main() -> Result<()> {
         "add_tx_mempool",
         Some(SelfArgType::Mut),
         vec![
-            ("size", ArgType::Primitive { ty: "usize".to_string() }),
-            ("min_elts", ArgType::Primitive { ty: "usize".to_string() }),
+            ("size", ArgType::Primitive("usize".to_string())),
+            ("min_elts", ArgType::Primitive("usize".to_string())),
         ],
         None,
         true,

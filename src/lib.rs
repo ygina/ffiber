@@ -7,7 +7,7 @@ use color_eyre::eyre::{Result, ErrReport};
 use types::{ArgType, SelfArgType, DerivedTrait};
 
 pub struct CDylibCompiler {
-    pub compiler: compiler::SerializationCompiler,
+    pub inner: compiler::SerializationCompiler,
     pub package_name: String,
     pub package_name_c: String,
     pub package_folder: PathBuf,
@@ -26,7 +26,7 @@ impl CDylibCompiler {
         let package_name_c =
             format!("{}-c", str::replace(&package_name, "_", "-"));
         CDylibCompiler {
-            compiler: compiler::SerializationCompiler::new(),
+            inner: compiler::SerializationCompiler::new(),
             package_folder:
                 Path::new(output_folder).join(&package_name_c).to_path_buf(),
             package_name,
@@ -65,7 +65,7 @@ impl CDylibCompiler {
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.
     pub fn add_dependency(&mut self, dependency: &str) -> Result<()> {
-        self.compiler.add_dependency(dependency)?;
+        self.inner.add_dependency(dependency)?;
         Ok(())
     }
 
@@ -94,7 +94,7 @@ impl CDylibCompiler {
         use_error_code: bool,
     ) -> Result<()> {
         codegen::add_extern_c_function(
-            &mut self.compiler,
+            &mut self.inner,
             extern_name,
             struct_name,
             func_call,
@@ -139,7 +139,7 @@ impl CDylibCompiler {
             &self.crates)?;
 
         let lib_file = src_folder.join("lib.rs");
-        self.compiler.flush(&lib_file)?;
+        self.inner.flush(&lib_file)?;
         compiler::run_rustfmt(&lib_file)?;
         Ok(())
     }

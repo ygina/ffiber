@@ -94,13 +94,13 @@ pub fn add_extern_c_function(
             args.push(FunctionArg::CSelfArg);
         }
         for (arg_name, arg_ty) in &raw_args {
-            args.push(FunctionArg::CArg(CArgInfo::arg(arg_name, arg_ty.to_string())));
+            args.push(FunctionArg::CArg(CArgInfo::arg(arg_name, arg_ty.to_c_str())));
             if arg_ty.is_buffer() {
                 args.push(FunctionArg::CArg(CArgInfo::len_arg(arg_name)));
             }
         }
         if let Some(ret_ty) = &raw_ret {
-            args.push(FunctionArg::CArg(CArgInfo::ret_arg(ret_ty.to_string())));
+            args.push(FunctionArg::CArg(CArgInfo::ret_arg(ret_ty.to_c_str())));
             if ret_ty.is_buffer() {
                 args.push(FunctionArg::CArg(CArgInfo::ret_len_arg()));
             }
@@ -144,18 +144,18 @@ pub fn add_extern_c_function(
     for (i, (arg_name, arg_ty)) in raw_args.iter().enumerate() {
         let left = format!("arg{}", i);
         let right = match arg_ty {
-            ArgType::Primitive{..} => arg_name.to_string(),
-            ArgType::Struct { inner_ty } => format!(
+            ArgType::Primitive(_) => arg_name.to_string(),
+            ArgType::Struct{..} => format!(
                 "unsafe {{ *Box::from_raw({} as *mut {}) }}",
-                arg_name, inner_ty,
+                arg_name, arg_ty.to_rust_str(),
             ),
-            ArgType::Ref { inner_ty } => format!(
+            ArgType::Ref { ty } => format!(
                 "unsafe {{ Box::from_raw({} as *mut {}) }}",
-                arg_name, inner_ty,
+                arg_name, ty.to_rust_str(),
             ),
-            ArgType::RefMut { inner_ty } => format!(
+            ArgType::RefMut { ty } => format!(
                 "{} as *mut {}",
-                arg_name, inner_ty,
+                arg_name, ty.to_rust_str(),
             ),
             ArgType::Buffer => format!(
                 "unsafe {{ std::slice::from_raw_parts({}, {}_len) }}",
@@ -176,8 +176,8 @@ pub fn add_extern_c_function(
         .collect::<Vec<_>>();
     let ret_ty = if let Some(ref ret_ty) = raw_ret {
         match ret_ty {
-            ArgType::Ref { inner_ty } => Some(format!("*const {}", &inner_ty)),
-            ArgType::RefMut { inner_ty } => Some(format!("*mut {}", &inner_ty)),
+            ArgType::Ref { ty } => Some(format!("*const {}", &ty.to_rust_str())),
+            ArgType::RefMut { ty } => Some(format!("*mut {}", &ty.to_rust_str())),
             _ => None,
         }
     } else {
@@ -224,7 +224,7 @@ pub fn add_extern_c_function(
     // Marshall return value into C type
     if let Some(ret_ty) = &raw_ret {
         match ret_ty {
-            ArgType::Primitive{..} => {
+            ArgType::Primitive(_) => {
                 compiler.add_unsafe_set("return_ptr", "value")?;
             }
             ArgType::Struct{..} => {
@@ -251,7 +251,7 @@ pub fn add_extern_c_function(
     }
     for (i, (_, arg_ty)) in raw_args.iter().enumerate() {
         match arg_ty {
-            ArgType::Primitive{..} => { continue; },
+            ArgType::Primitive(_) => { continue; },
             ArgType::Struct{..} => { continue; },
             ArgType::Ref{..} => {
                 compiler.add_func_call(None, "Box::into_raw", vec![format!("arg{}", i)], false)?;
