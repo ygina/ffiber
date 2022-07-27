@@ -3,7 +3,7 @@ pub mod compiler;
 pub mod types;
 
 use std::{fs, path::{Path, PathBuf}};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Result, ErrReport};
 use types::{ArgType, SelfArgType, DerivedTrait};
 
 pub struct CDylibCompiler {
@@ -44,13 +44,23 @@ impl CDylibCompiler {
         self.crates.push(format!("{} = \"{}\"", crate_name, version));
     }
 
-    /// Add a crate (based on the path to the crate) to the Cargo.toml.
-    pub fn add_crate_path(
+    /// Add a crate to the Cargo.toml.
+    pub fn add_crate(
         &mut self,
         crate_name: &str,
-        path: &str,
-    ) {
-        self.crates.push(format!("{} = {{ path = \"{}\" }}", crate_name, path));
+        kv: Vec<(&str, &str)>,
+    ) -> Result<()> {
+        if !kv.is_empty() {
+            self.crates.push(format!(
+                "{} = {{ {} }}",
+                crate_name,
+                kv.into_iter().map(|(k, v)| format!("{} = {}", k, v))
+                    .collect::<Vec<_>>().join(","),
+            ));
+            Ok(())
+        } else {
+            Err(ErrReport::msg("Cargo.toml crate requires at least one key."))
+        }
     }
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.

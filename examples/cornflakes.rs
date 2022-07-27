@@ -4,14 +4,30 @@ use color_eyre::eyre::Result;
 
 fn main() -> Result<()> {
     let mut compiler = CDylibCompiler::new("mlx5-datapath", ".");
-    compiler.add_crate_path("mlx5-datapath",
-        "/users/ygina/cornflakes/mlx5-datapath");
-    compiler.add_crate_path("cornflakes-libos",
-        "/users/ygina/cornflakes/cornflakes-libos");
+    compiler.add_crate("bumpalo", vec![
+        ("git", "\"https://github.com/deeptir18/bumpalo\""),
+        ("features", "[\"collections\"]"),
+    ])?;
+    compiler.add_crate("mlx5-datapath",
+        vec![("path", "\"/users/ygina/cornflakes/mlx5-datapath\"")])?;
+    compiler.add_crate("cornflakes-libos",
+        vec![("path", "\"/users/ygina/cornflakes/cornflakes-libos\"")])?;
+    compiler.add_dependency("bumpalo::Bump")?;
     compiler.add_dependency(
         "mlx5_datapath::datapath::connection::Mlx5Connection")?;
     compiler.add_dependency("cornflakes_libos::datapath::{{Datapath, \
         ReceivedPkt}}")?;
+
+    // Bump
+    compiler.add_extern_c_function(
+        None,
+        "Bump",
+        "reset",
+        Some(SelfArgType::Mut),
+        vec![],
+        None,
+        false,
+    )?;
 
     // ReceivedPkt
     compiler.add_extern_c_function(
