@@ -6,3 +6,6 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.5"
+
+[[example]]
+name = "cornflakes"
