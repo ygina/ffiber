@@ -2,8 +2,8 @@
 pub enum ArgType {
     Primitive(String),
     Struct { name: String, params: Vec<Box<ArgType>> },
-    Ref { ty: Box<ArgType> },
-    RefMut { ty: Box<ArgType> },
+    Ref(Box<ArgType>),
+    RefMut(Box<ArgType>),
     Buffer,
 }
 
@@ -43,15 +43,11 @@ impl ArgType {
     }
 
     pub fn new_ref(struct_name: &str) -> Self {
-        ArgType::Ref {
-            ty: Box::new(ArgType::new_struct(struct_name)),
-        }
+        ArgType::Ref(Box::new(ArgType::new_struct(struct_name)))
     }
 
     pub fn new_ref_mut(struct_name: &str) -> Self {
-        ArgType::RefMut {
-            ty: Box::new(ArgType::new_struct(struct_name)),
-        }
+        ArgType::RefMut(Box::new(ArgType::new_struct(struct_name)))
     }
 
     pub fn is_buffer(&self) -> bool {
@@ -80,8 +76,8 @@ impl ArgType {
                 format!("{}<{}>", &name, params.iter().map(|p| p.to_rust_str())
                     .collect::<Vec<_>>().join(", "))
             },
-            ArgType::Ref { ty } => format!("&{}", &ty.to_rust_str()),
-            ArgType::RefMut { ty } => format!("&mut {}", &ty.to_rust_str()),
+            ArgType::Ref(ty) => format!("&{}", &ty.to_rust_str()),
+            ArgType::RefMut(ty) => format!("&mut {}", &ty.to_rust_str()),
             ArgType::Buffer => unimplemented!(),
         }
     }

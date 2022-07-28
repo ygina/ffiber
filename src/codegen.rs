@@ -155,11 +155,11 @@ pub fn add_extern_c_function(
                 "unsafe {{ *Box::from_raw({} as *mut {}) }}",
                 arg_name, arg_ty.to_rust_str(),
             ),
-            ArgType::Ref { ty } => format!(
+            ArgType::Ref(ty) => format!(
                 "unsafe {{ Box::from_raw({} as *mut {}) }}",
                 arg_name, ty.to_rust_str(),
             ),
-            ArgType::RefMut { ty } => format!(
+            ArgType::RefMut(ty) => format!(
                 "{} as *mut {}",
                 arg_name, ty.to_rust_str(),
             ),
@@ -175,15 +175,15 @@ pub fn add_extern_c_function(
     let args = raw_args.iter()
         .enumerate()
         .map(|(i, (_, arg_ty))| match arg_ty {
-            ArgType::Ref{..} => format!("&arg{}", i),
-            ArgType::RefMut{..} => format!("unsafe {{ &mut *arg{} }}", i),
+            ArgType::Ref(_) => format!("&arg{}", i),
+            ArgType::RefMut(_) => format!("unsafe {{ &mut *arg{} }}", i),
             _ => format!("arg{}", i),
         })
         .collect::<Vec<_>>();
     let ret_ty = if let Some(ref ret_ty) = raw_ret {
         match ret_ty {
-            ArgType::Ref { ty } => Some(format!("*const {}", &ty.to_rust_str())),
-            ArgType::RefMut { ty } => Some(format!("*mut {}", &ty.to_rust_str())),
+            ArgType::Ref(ty) => Some(format!("*const {}", &ty.to_rust_str())),
+            ArgType::RefMut(ty) => Some(format!("*mut {}", &ty.to_rust_str())),
             _ => None,
         }
     } else {
@@ -245,7 +245,7 @@ pub fn add_extern_c_function(
                    false)?;
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             }
-            ArgType::Ref{..} | ArgType::RefMut{..} => {
+            ArgType::Ref(_) | ArgType::RefMut(_) => {
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             },
             ArgType::Buffer => unimplemented!(),
@@ -265,10 +265,10 @@ pub fn add_extern_c_function(
         match arg_ty {
             ArgType::Primitive(_) => { continue; },
             ArgType::Struct{..} => { continue; },
-            ArgType::Ref{..} => {
+            ArgType::Ref(_) => {
                 compiler.add_func_call(None, "Box::into_raw", vec![format!("arg{}", i)], false)?;
             },
-            ArgType::RefMut{..} => { continue; },
+            ArgType::RefMut(_) => { continue; },
             ArgType::Buffer => { continue; },
         };
     }
