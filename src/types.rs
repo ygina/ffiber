@@ -4,7 +4,7 @@ pub enum ArgType {
     Struct { name: String, params: Vec<Box<ArgType>> },
     Ref(Box<ArgType>),
     RefMut(Box<ArgType>),
-    Buffer,
+    Buffer(Box<ArgType>),
     Enum { name: String, variants: Vec<String> },
 }
 
@@ -64,9 +64,13 @@ impl ArgType {
         ArgType::RefMut(Box::new(ArgType::new_struct(struct_name)))
     }
 
+    pub fn new_u8_buffer() -> Self {
+        ArgType::Buffer(Box::new(ArgType::Primitive("u8".to_string())))
+    }
+
     pub fn is_buffer(&self) -> bool {
         match self {
-            ArgType::Buffer => true,
+            ArgType::Buffer(_) => true,
             _ => false,
         }
     }
@@ -78,14 +82,14 @@ impl ArgType {
         }
     }
 
-    pub fn to_c_str(&self) -> &str {
+    pub fn to_c_str(&self) -> String {
         match self {
-            ArgType::Primitive(ty) => ty,
-            ArgType::Struct{..} => "*mut ::std::os::raw::c_void",
-            ArgType::Ref{..} => "*mut ::std::os::raw::c_void",
-            ArgType::RefMut{..} => "*mut ::std::os::raw::c_void",
-            ArgType::Buffer => "*const u8",
-            ArgType::Enum{..} => "usize",
+            ArgType::Primitive(ty) => ty.clone(),
+            ArgType::Struct{..} => "*mut ::std::os::raw::c_void".to_string(),
+            ArgType::Ref(_) => "*mut ::std::os::raw::c_void".to_string(),
+            ArgType::RefMut(_) => "*mut ::std::os::raw::c_void".to_string(),
+            ArgType::Buffer(ty) => format!("*const {}", ty.to_c_str()),
+            ArgType::Enum{..} => "usize".to_string(),
         }
     }
 
@@ -100,7 +104,12 @@ impl ArgType {
             },
             ArgType::Ref(ty) => format!("&{}", &ty.to_rust_str()),
             ArgType::RefMut(ty) => format!("&mut {}", &ty.to_rust_str()),
-            ArgType::Buffer => unimplemented!(),
+            ArgType::Buffer(ty) => format!("*const {}", match &**ty {
+                ArgType::Ref(inner_ty) => format!("*const {}", inner_ty.to_rust_str()),
+                ArgType::RefMut(inner_ty) => format!("*mut {}", inner_ty.to_rust_str()),
+                ArgType::Buffer(_) => unimplemented!(),
+                ty => ty.to_rust_str(),
+            }),
             ArgType::Enum { name, .. } => name.clone(),
         }
     }

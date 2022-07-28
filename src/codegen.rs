@@ -93,13 +93,13 @@ pub fn add_extern_c_function(
             args.push(FunctionArg::CSelfArg);
         }
         for (arg_name, arg_ty) in &raw_args {
-            args.push(FunctionArg::CArg(CArgInfo::arg(arg_name, arg_ty.to_c_str())));
+            args.push(FunctionArg::CArg(CArgInfo::arg(arg_name, &arg_ty.to_c_str())));
             if arg_ty.is_buffer() {
                 args.push(FunctionArg::CArg(CArgInfo::len_arg(arg_name)));
             }
         }
         if let Some(ret_ty) = &raw_ret {
-            args.push(FunctionArg::CArg(CArgInfo::ret_arg(ret_ty.to_c_str())));
+            args.push(FunctionArg::CArg(CArgInfo::ret_arg(&ret_ty.to_c_str())));
             if ret_ty.is_buffer() {
                 args.push(FunctionArg::CArg(CArgInfo::ret_len_arg()));
             }
@@ -157,9 +157,9 @@ pub fn add_extern_c_function(
                 "{} as *mut {}",
                 arg_name, ty.to_rust_str(),
             ),
-            ArgType::Buffer => format!(
-                "unsafe {{ std::slice::from_raw_parts({}, {}_len) }}",
-                arg_name, arg_name,
+            ArgType::Buffer(_) => format!(
+                "unsafe {{ std::slice::from_raw_parts({} as {}, {}_len) }}",
+                arg_name, arg_ty.to_rust_str(), arg_name,
             ),
             ArgType::Enum { name, variants } => {
                 let mut variant_nums = (0..variants.len())
@@ -266,7 +266,17 @@ pub fn add_extern_c_function(
             ArgType::Ref(_) | ArgType::RefMut(_) => {
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             },
-            ArgType::Buffer => unimplemented!(),
+            ArgType::Buffer(ty) => {
+                compiler.add_def_with_let(false,
+                    Some(format!("Vec<*mut {}>", ty.to_rust_str())),
+                    "value",
+                    "value.into_iter().map(|x| Box::into_raw(Box::new(x))).collect()")?;
+                compiler.add_func_call_with_let("value", None, None,
+                   "Box::into_raw", vec!["Box::new(value)".to_string()],
+                   false)?;
+                compiler.add_unsafe_set("return_ptr", "(*value).as_ptr() as _")?;
+                compiler.add_unsafe_set("return_len_ptr", "(*value).len()")?;
+            },
             ArgType::Enum{..} => unimplemented!(),
         }
     }
@@ -290,7 +300,7 @@ pub fn add_extern_c_function(
                 compiler.add_func_call(None, "Box::into_raw", vec![format!("arg{}", i)], false)?;
             },
             ArgType::RefMut(_) => { continue; },
-            ArgType::Buffer => { continue; },
+            ArgType::Buffer(_) => { continue; },
             ArgType::Enum{..} => { continue; },
         };
     }
