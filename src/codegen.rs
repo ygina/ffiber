@@ -80,22 +80,16 @@ pub fn gen_cargo_toml(
 
 pub fn add_extern_c_function(
     compiler: &mut SerializationCompiler,
-    extern_name: Option<&str>,
-    struct_ty: ArgType,
+    extern_name: &str,
+    struct_ty: Option<(ArgType, SelfArgType)>,
     func_name: &str,
-    self_ty: Option<SelfArgType>,
     raw_args: Vec<(&str, ArgType)>,
     raw_ret: Option<ArgType>,
     use_error_code: bool,
 ) -> Result<()> {
-    let (struct_name, struct_params) = match struct_ty {
-        ArgType::Struct { ref name, ref params } => (name, params),
-        _ => bail!("Expecting Struct argument type as struct_ty"),
-    };
-
     let args = {
         let mut args = vec![];
-        if self_ty.is_some() {
+        if struct_ty.as_ref().map(|(_, self_ty)| self_ty.is_some()).unwrap_or(false) {
             args.push(FunctionArg::CSelfArg);
         }
         for (arg_name, arg_ty) in &raw_args {
@@ -114,15 +108,15 @@ pub fn add_extern_c_function(
     };
 
     let func_context = FunctionContext::new_extern_c(
-        extern_name.unwrap_or(&format!("{}_{}", struct_name, func_name)),
-        true, args, use_error_code,
+        extern_name, true, args, use_error_code,
     );
     compiler.add_context(Context::Function(func_context))?;
 
     // Format self argument
-    if let Some(ref self_ty) = self_ty {
+    if let Some((ref struct_ty, ref self_ty)) = struct_ty {
         let struct_name = struct_ty.to_rust_str();
         match self_ty {
+            SelfArgType::None => {}
             SelfArgType::Value => {
                 compiler.add_unsafe_def_with_let(false, None, "self_",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
@@ -191,16 +185,24 @@ pub fn add_extern_c_function(
     };
 
     // Call function wrapper
-    let (caller, func) = if self_ty.is_some() {
-        (Some("self_".to_string()), func_name.to_string())
+    let (caller, func) = if let Some((ref struct_ty, ref self_ty)) = struct_ty {
+        if self_ty.is_some() {
+            (Some("self_".to_string()), func_name.to_string())
+        } else {
+            let (struct_name, struct_params) = match struct_ty {
+                ArgType::Struct { ref name, ref params } => (name, params),
+                _ => bail!("Expecting Struct argument type as struct_ty"),
+            };
+            (None, format!(
+                "{}::<{}>::{}",
+                struct_name,
+                struct_params.iter()
+                    .map(|p| p.to_rust_str()).collect::<Vec<_>>().join(", "),
+                func_name,
+            ))
+        }
     } else {
-        (None, format!(
-            "{}::<{}>::{}",
-            struct_name,
-            struct_params.iter()
-                .map(|p| p.to_rust_str()).collect::<Vec<_>>().join(", "),
-            func_name,
-        ))
+        (None, func_name.to_string())
     };
     if use_error_code || raw_ret.is_some() {
         compiler.add_func_call_with_let("value", ret_ty, caller, &func, args, false)?;
@@ -253,13 +255,15 @@ pub fn add_extern_c_function(
     }
 
     // Unformat arguments
-    if let Some(ref self_ty) = self_ty {
-        let arg_name = if self_ty.is_ref() {
-            "self_box"
-        } else {
-            "self_"
-        }.to_string();
-        compiler.add_func_call(None, "Box::into_raw", vec![arg_name], false)?;
+    if let Some((_, ref self_ty)) = struct_ty {
+        if self_ty.is_some() {
+            let arg_name = if self_ty.is_ref() {
+                "self_box"
+            } else {
+                "self_"
+            }.to_string();
+            compiler.add_func_call(None, "Box::into_raw", vec![arg_name], false)?;
+        }
     }
     for (i, (_, arg_ty)) in raw_args.iter().enumerate() {
         match arg_ty {

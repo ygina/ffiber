@@ -21,8 +21,8 @@ fn main() -> Result<()> {
     // Bump
     compiler.add_extern_c_function(
         ArgType::new_struct("Bump"),
+        SelfArgType::Mut,
         "reset",
-        Some(SelfArgType::Mut),
         vec![],
         None,
         false,
@@ -35,16 +35,16 @@ fn main() -> Result<()> {
     };
     compiler.add_extern_c_function(
         struct_ty.clone(),
+        SelfArgType::Value,
         "msg_id",
-        Some(SelfArgType::Value),
         vec![],
         Some(ArgType::Primitive("u32".to_string())),
         false,
     )?;
     compiler.add_extern_c_function(
         struct_ty.clone(),
+        SelfArgType::Value,
         "conn_id",
-        Some(SelfArgType::Value),
         vec![],
         Some(ArgType::Primitive("usize".to_string())),
         false,
@@ -53,8 +53,8 @@ fn main() -> Result<()> {
     // Mlx5Connection
     compiler.add_extern_c_function(
         ArgType::new_struct("Mlx5Connection"),
+        SelfArgType::Mut,
         "set_copying_threshold",
-        Some(SelfArgType::Mut),
         vec![
             ("copying_threshold", ArgType::Primitive("usize".to_string())),
         ],
@@ -63,8 +63,8 @@ fn main() -> Result<()> {
     )?;
     compiler.add_extern_c_function(
         ArgType::new_struct("Mlx5Connection"),
+        SelfArgType::Mut,
         "add_memory_pool",
-        Some(SelfArgType::Mut),
         vec![
             ("buf_size", ArgType::Primitive("usize".to_string())),
             ("min_elts", ArgType::Primitive("usize".to_string())),
@@ -74,8 +74,8 @@ fn main() -> Result<()> {
     )?;
     compiler.add_extern_c_function(
         ArgType::new_struct("Mlx5Connection"),
+        SelfArgType::Mut,
         "add_tx_mempool",
-        Some(SelfArgType::Mut),
         vec![
             ("size", ArgType::Primitive("usize".to_string())),
             ("min_elts", ArgType::Primitive("usize".to_string())),

@@ -86,18 +86,22 @@ impl CDylibCompiler {
     pub fn add_extern_c_function(
         &mut self,
         struct_ty: ArgType,
+        self_ty: SelfArgType,
         func_call: &str,
-        self_ty: Option<SelfArgType>,
         raw_args: Vec<(&str, ArgType)>,
         raw_ret: Option<ArgType>,
         use_error_code: bool,
     ) -> Result<()> {
+        assert!(struct_ty.is_struct());
+        let struct_name = match struct_ty {
+            ArgType::Struct { ref name, .. } => name,
+            _ => unreachable!(),
+        };
         codegen::add_extern_c_function(
             &mut self.inner,
-            None,
-            struct_ty,
+            &format!("{}_{}", struct_name, func_call),
+            Some((struct_ty, self_ty)),
             func_call,
-            self_ty,
             raw_args,
             raw_ret,
             use_error_code,
@@ -110,18 +114,40 @@ impl CDylibCompiler {
         &mut self,
         extern_name: &str,
         struct_ty: ArgType,
+        self_ty: SelfArgType,
         func_call: &str,
-        self_ty: Option<SelfArgType>,
+        raw_args: Vec<(&str, ArgType)>,
+        raw_ret: Option<ArgType>,
+        use_error_code: bool,
+    ) -> Result<()> {
+        assert!(struct_ty.is_struct());
+        codegen::add_extern_c_function(
+            &mut self.inner,
+            extern_name,
+            Some((struct_ty, self_ty)),
+            func_call,
+            raw_args,
+            raw_ret,
+            use_error_code,
+        )?;
+        Ok(())
+    }
+
+    /// Like `add_extern_c_function` except it is a wrapper around a standalone
+    /// function rather than a function defined on a struct.
+    pub fn add_extern_c_function_standalone(
+        &mut self,
+        extern_name: &str,
+        func_call: &str,
         raw_args: Vec<(&str, ArgType)>,
         raw_ret: Option<ArgType>,
         use_error_code: bool,
     ) -> Result<()> {
         codegen::add_extern_c_function(
             &mut self.inner,
-            Some(extern_name),
-            struct_ty,
+            extern_name,
+            None,
             func_call,
-            self_ty,
             raw_args,
             raw_ret,
             use_error_code,
