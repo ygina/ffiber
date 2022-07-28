@@ -20,8 +20,7 @@ fn main() -> Result<()> {
 
     // Bump
     compiler.add_extern_c_function(
-        None,
-        "Bump",
+        ArgType::new_struct("Bump"),
         "reset",
         Some(SelfArgType::Mut),
         vec![],
@@ -30,9 +29,12 @@ fn main() -> Result<()> {
     )?;
 
     // ReceivedPkt
+    let struct_ty = ArgType::Struct {
+        name: "ReceivedPkt".to_string(),
+        params: vec![Box::new(ArgType::new_struct("Mlx5Connection"))],
+    };
     compiler.add_extern_c_function(
-        Some("ReceivedPkt_msg_id"),
-        "ReceivedPkt<Mlx5Connection>",
+        struct_ty.clone(),
         "msg_id",
         Some(SelfArgType::Value),
         vec![],
@@ -40,8 +42,7 @@ fn main() -> Result<()> {
         false,
     )?;
     compiler.add_extern_c_function(
-        Some("ReceivedPkt_conn_id"),
-        "ReceivedPkt<Mlx5Connection>",
+        struct_ty.clone(),
         "conn_id",
         Some(SelfArgType::Value),
         vec![],
@@ -51,8 +52,7 @@ fn main() -> Result<()> {
 
     // Mlx5Connection
     compiler.add_extern_c_function(
-        None,
-        "Mlx5Connection",
+        ArgType::new_struct("Mlx5Connection"),
         "set_copying_threshold",
         Some(SelfArgType::Mut),
         vec![
@@ -62,8 +62,7 @@ fn main() -> Result<()> {
         false,
     )?;
     compiler.add_extern_c_function(
-        None,
-        "Mlx5Connection",
+        ArgType::new_struct("Mlx5Connection"),
         "add_memory_pool",
         Some(SelfArgType::Mut),
         vec![
@@ -74,8 +73,7 @@ fn main() -> Result<()> {
         true,
     )?;
     compiler.add_extern_c_function(
-        None,
-        "Mlx5Connection",
+        ArgType::new_struct("Mlx5Connection"),
         "add_tx_mempool",
         Some(SelfArgType::Mut),
         vec![

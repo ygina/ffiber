@@ -5,7 +5,7 @@ use super::{
     },
     types::{ArgType, SelfArgType},
 };
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{bail, Result};
 use std::{str, path::Path};
 
 pub fn gen_build_rs(package_name: &str, package_folder: &Path) -> Result<()> {
@@ -81,13 +81,18 @@ pub fn gen_cargo_toml(
 pub fn add_extern_c_function(
     compiler: &mut SerializationCompiler,
     extern_name: Option<&str>,
-    struct_name: &str,
+    struct_ty: ArgType,
     func_name: &str,
     self_ty: Option<SelfArgType>,
     raw_args: Vec<(&str, ArgType)>,
     raw_ret: Option<ArgType>,
     use_error_code: bool,
 ) -> Result<()> {
+    let (struct_name, struct_params) = match struct_ty {
+        ArgType::Struct { ref name, ref params } => (name, params),
+        _ => bail!("Expecting Struct argument type as struct_ty"),
+    };
+
     let args = {
         let mut args = vec![];
         if self_ty.is_some() {
@@ -116,6 +121,7 @@ pub fn add_extern_c_function(
 
     // Format self argument
     if let Some(ref self_ty) = self_ty {
+        let struct_name = struct_ty.to_rust_str();
         match self_ty {
             SelfArgType::Value => {
                 compiler.add_unsafe_def_with_let(false, None, "self_",
@@ -188,7 +194,13 @@ pub fn add_extern_c_function(
     let (caller, func) = if self_ty.is_some() {
         (Some("self_".to_string()), func_name.to_string())
     } else {
-        (None, format!("{}::{}", struct_name, func_name))
+        (None, format!(
+            "{}::<{}>::{}",
+            struct_name,
+            struct_params.iter()
+                .map(|p| p.to_rust_str()).collect::<Vec<_>>().join(", "),
+            func_name,
+        ))
     };
     if use_error_code || raw_ret.is_some() {
         compiler.add_func_call_with_let("value", ret_ty, caller, &func, args, false)?;

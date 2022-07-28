@@ -70,11 +70,11 @@ impl CDylibCompiler {
     }
 
     /// Adds an extern C function wrapper around a method on a struct.
+    /// The default name is <struct_name>_<func_call>, where the name of the
+    /// struct omits the parameterized types.
     ///
     /// Params:
-    /// - `extern_name`: The extern function name, <extern_name>_<struct_name>
-    ///    by default.
-    /// - `struct_name`: The struct name on which the function is defined.
+    /// - `struct_ty`: The struct on which the function is defined.
     /// - `func_call`: The name of the function call on the struct.
     /// - `self_ty`: If the function call has a self argument, whether it is
     ///    mutable and/or a reference.
@@ -85,8 +85,7 @@ impl CDylibCompiler {
     /// TODO: Parse these options directly from the function specification.
     pub fn add_extern_c_function(
         &mut self,
-        extern_name: Option<&str>,
-        struct_name: &str,
+        struct_ty: ArgType,
         func_call: &str,
         self_ty: Option<SelfArgType>,
         raw_args: Vec<(&str, ArgType)>,
@@ -95,8 +94,32 @@ impl CDylibCompiler {
     ) -> Result<()> {
         codegen::add_extern_c_function(
             &mut self.inner,
-            extern_name,
-            struct_name,
+            None,
+            struct_ty,
+            func_call,
+            self_ty,
+            raw_args,
+            raw_ret,
+            use_error_code,
+        )?;
+        Ok(())
+    }
+
+    /// Like `add_extern_c_function` except overrides the extern function name.
+    pub fn add_extern_c_function_with_name(
+        &mut self,
+        extern_name: &str,
+        struct_ty: ArgType,
+        func_call: &str,
+        self_ty: Option<SelfArgType>,
+        raw_args: Vec<(&str, ArgType)>,
+        raw_ret: Option<ArgType>,
+        use_error_code: bool,
+    ) -> Result<()> {
+        codegen::add_extern_c_function(
+            &mut self.inner,
+            Some(extern_name),
+            struct_ty,
             func_call,
             self_ty,
             raw_args,
