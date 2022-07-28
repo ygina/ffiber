@@ -5,6 +5,7 @@ pub enum ArgType {
     Ref(Box<ArgType>),
     RefMut(Box<ArgType>),
     Buffer,
+    Enum { name: String, variants: Vec<String> },
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -84,6 +85,7 @@ impl ArgType {
             ArgType::Ref{..} => "*mut ::std::os::raw::c_void",
             ArgType::RefMut{..} => "*mut ::std::os::raw::c_void",
             ArgType::Buffer => "*const u8",
+            ArgType::Enum{..} => "usize",
         }
     }
 
@@ -99,6 +101,7 @@ impl ArgType {
             ArgType::Ref(ty) => format!("&{}", &ty.to_rust_str()),
             ArgType::RefMut(ty) => format!("&mut {}", &ty.to_rust_str()),
             ArgType::Buffer => unimplemented!(),
+            ArgType::Enum { name, .. } => name.clone(),
         }
     }
 }

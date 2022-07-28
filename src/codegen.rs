@@ -161,6 +161,22 @@ pub fn add_extern_c_function(
                 "unsafe {{ std::slice::from_raw_parts({}, {}_len) }}",
                 arg_name, arg_name,
             ),
+            ArgType::Enum { name, variants } => {
+                let mut variant_nums = (0..variants.len())
+                    .map(|i| i.to_string()).collect::<Vec<_>>();
+                let mut variants = variants.into_iter()
+                    .map(|v| format!("{}::{}", name, v)).collect::<Vec<_>>();
+                variant_nums.push("_".to_string());
+                variants.push("panic!(\"invalid enum variant\")".to_string());
+                let match_context = MatchContext::new_with_def(
+                    arg_name, variant_nums, &left);
+                compiler.add_context(Context::Match(match_context))?;
+                for v in variants {
+                    compiler.add_return_val(&v, false)?;
+                    compiler.pop_context()?;
+                }
+                continue;
+            }
         };
         compiler.add_def_with_let(false, None, &left, &right)?;
     }
@@ -251,6 +267,7 @@ pub fn add_extern_c_function(
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             },
             ArgType::Buffer => unimplemented!(),
+            ArgType::Enum{..} => unimplemented!(),
         }
     }
 
@@ -274,6 +291,7 @@ pub fn add_extern_c_function(
             },
             ArgType::RefMut(_) => { continue; },
             ArgType::Buffer => { continue; },
+            ArgType::Enum{..} => { continue; },
         };
     }
 
