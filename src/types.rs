@@ -1,4 +1,4 @@
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ArgType {
     Primitive(String),
     Struct { name: String, params: Vec<Box<ArgType>> },
@@ -7,7 +7,7 @@ pub enum ArgType {
     Buffer,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum SelfArgType {
     Value,
     Ref,
@@ -15,7 +15,7 @@ pub enum SelfArgType {
     Mut,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum DerivedTrait {
     Default,
     Clone,
@@ -35,6 +35,25 @@ impl SelfArgType {
 }
 
 impl ArgType {
+    pub fn new_struct(struct_name: &str) -> Self {
+        ArgType::Struct {
+            name: struct_name.to_string(),
+            params: vec![],
+        }
+    }
+
+    pub fn new_ref(struct_name: &str) -> Self {
+        ArgType::Ref {
+            ty: Box::new(ArgType::new_struct(struct_name)),
+        }
+    }
+
+    pub fn new_ref_mut(struct_name: &str) -> Self {
+        ArgType::RefMut {
+            ty: Box::new(ArgType::new_struct(struct_name)),
+        }
+    }
+
     pub fn is_buffer(&self) -> bool {
         match self {
             ArgType::Buffer => true,
