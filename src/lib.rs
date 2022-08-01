@@ -36,7 +36,7 @@ impl CDylibCompiler {
     }
 
     /// Add a specific version of a crate to the Cargo.toml.
-    pub fn add_crate_version(
+    pub fn add_dependency_version(
         &mut self,
         crate_name: &str,
         version: &str,
@@ -45,7 +45,7 @@ impl CDylibCompiler {
     }
 
     /// Add a crate to the Cargo.toml.
-    pub fn add_crate(
+    pub fn add_dependency(
         &mut self,
         crate_name: &str,
         kv: Vec<(&str, &str)>,
@@ -64,7 +64,7 @@ impl CDylibCompiler {
     }
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.
-    pub fn add_dependency(&mut self, dependency: &str) -> Result<()> {
+    pub fn import(&mut self, dependency: &str) -> Result<()> {
         self.inner.add_dependency(dependency)?;
         Ok(())
     }
