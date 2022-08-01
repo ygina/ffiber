@@ -41,6 +41,10 @@ cd mlx5-datapath-c
 cargo b  # mlx5_datapath.h
 ```
 
+Codebases that use ffiber:
+
+* [Cornflakes](https://github.com/deeptir18/cornflakes/tree/ffiber/cornflakes-codegen/src/c_codegen)
+
 ## Roadmap
 
 Several features are [planned](https://github.com/ygina/ffiber/issues). Comment
