@@ -127,23 +127,13 @@ pub fn add_extern_c_function(
         let struct_name = struct_ty.to_rust_str();
         match self_ty {
             SelfType::None => {}
-            SelfType::Value => {
-                compiler.add_unsafe_def_with_let(false, None, "self_",
-                    &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
-            }
+            SelfType::Value => unimplemented!(),
+            SelfType::ValueMut => unimplemented!(),
             SelfType::Ref => {
-                compiler.add_unsafe_def_with_let(false, None, "self_box",
-                    &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
                 compiler.add_unsafe_def_with_let(false, None, "self_",
-                    "&**self_box")?;
+                    &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
             }
             SelfType::RefMut => {
-                compiler.add_unsafe_def_with_let(false, None, "self_box",
-                    &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
-                compiler.add_unsafe_def_with_let(false, None, "self_",
-                    "&mut **self_box")?;
-            }
-            SelfType::ValueMut => {
                 compiler.add_unsafe_def_with_let(true, None, "self_",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
             }
@@ -294,12 +284,11 @@ pub fn add_extern_c_function(
     // Unformat arguments
     if let Some((_, ref self_ty)) = struct_ty {
         if self_ty.is_some() {
-            let arg_name = if self_ty.is_ref() {
-                "self_box"
-            } else {
-                "self_"
-            }.to_string();
-            compiler.add_func_call(None, "Box::into_raw", vec![arg_name], false)?;
+            if !self_ty.is_ref() {
+                unimplemented!()
+            }
+            let args = vec!["self_".to_string()];
+            compiler.add_func_call(None, "Box::into_raw", args, false)?;
         }
     }
     for (i, (_, arg_ty)) in raw_args.iter().enumerate() {
