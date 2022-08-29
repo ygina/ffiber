@@ -3,7 +3,8 @@ use ffiber::types::{Type, SelfType};
 use color_eyre::eyre::Result;
 
 fn main() -> Result<()> {
-    let mut compiler = CDylibCompiler::new("mlx5-datapath", ".");
+    let mut compiler = CDylibCompiler::new_with_output_folder(
+        "mlx5-datapath", ".");
     compiler.add_dependency("bumpalo", vec![
         ("git", "\"https://github.com/deeptir18/bumpalo\""),
         ("features", "[\"collections\"]"),

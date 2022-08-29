@@ -1,4 +1,4 @@
-mod codegen;
+pub mod codegen;
 pub mod compiler;
 pub mod types;
 
@@ -15,10 +15,25 @@ pub struct CDylibCompiler {
 }
 
 impl CDylibCompiler {
+    /// Initialize a compiler for generating a cdylib crate.
+    ///
+    /// Two environment variables are required. <CDYLIB_NAME> indicates the
+    /// name of the Rust crate whose functions will be wrapped. <CDYLIB_ROOT>
+    /// indicates the path at which the cdylib directory will be written. In
+    /// particular, a cdylib crate will be created at the following path:
+    /// "<CDYLIB_ROOT>/<CDYLIB_NAME>-c".
+    pub fn new() -> Self {
+        let package_name = std::env::var("CDYLIB_NAME").expect("set \
+            CYDLIB_NAME envvar to the name of the original Rust crate");
+        let output_folder = std::env::var("CDYLIB_ROOT")
+            .expect("set CYDLIB_ROOT envvar to the path to the cdylib crate");
+        Self::new_with_output_folder(&package_name, &output_folder)
+    }
+
     /// Initialize a compiler for generating a cdylib crate at the given output
     /// folder. The compiler will also generate a build.rs file that uses
     /// cbindgen to output a header file.
-    pub fn new(
+    pub fn new_with_output_folder(
         package_name: &str,
         output_folder: &str,
     ) -> Self {

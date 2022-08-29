@@ -948,6 +948,19 @@ impl SerializationCompiler {
         run_rustfmt(output_file).wrap_err("Failure from run_rustfmt.")?;
         Ok(())
     }
+
+    pub fn append_flush(&self, output_file: &Path) -> Result<()> {
+        let mut of = std::fs::OpenOptions::new()
+            .append(true).create(true).open(output_file)
+            .wrap_err(format!("Failed to open output file at {:?}", output_file))?;
+        let mut pos: usize = 0;
+        while pos < self.current_string.as_str().len() {
+            pos += of.write(&self.current_string.as_str().as_bytes()[pos..])?;
+        }
+        of.flush().wrap_err("Failed to flush file.")?;
+        run_rustfmt(output_file).wrap_err("Failure from run_rustfmt.")?;
+        Ok(())
+    }
 }
 
 /// Programmatically runs rustfmt on a file.

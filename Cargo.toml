@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.5"
+syn = { version = "1.0.99", features = ["full"] }
 which = "4.1.0"
 
 [[example]]

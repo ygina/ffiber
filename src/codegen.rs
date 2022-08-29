@@ -133,7 +133,7 @@ pub fn add_extern_c_function(
                 compiler.add_unsafe_def_with_let(false, None, "self_",
                     "&mut **self_box")?;
             }
-            SelfType::Mut => {
+            SelfType::ValueMut => {
                 compiler.add_unsafe_def_with_let(true, None, "self_",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
             }
@@ -206,7 +206,7 @@ pub fn add_extern_c_function(
             (Some("self_".to_string()), func_name.to_string())
         } else {
             let (struct_name, struct_params) = match struct_ty {
-                Type::Struct { ref name, ref params } => (name, params),
+                Type::Struct { ref name, ref args } => (name, args),
                 _ => bail!("Expecting Struct argument type as struct_ty"),
             };
             (None, format!(
