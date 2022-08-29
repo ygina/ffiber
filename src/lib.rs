@@ -12,6 +12,7 @@ pub struct CDylibCompiler {
     pub package_name_c: String,
     pub package_folder: PathBuf,
     crates: Vec<String>,
+    dummy: bool,
 }
 
 impl CDylibCompiler {
@@ -23,6 +24,16 @@ impl CDylibCompiler {
     /// particular, a cdylib crate will be created at the following path:
     /// "<CDYLIB_ROOT>/<CDYLIB_NAME>-c".
     pub fn new() -> Self {
+        if std::env::var("CDYLIB").is_ok() {
+            return Self {
+                inner: compiler::SerializationCompiler::new(),
+                package_name: "".to_string(),
+                package_name_c: "".to_string(),
+                package_folder: Path::new("").to_path_buf(),
+                crates: vec![],
+                dummy: true,
+            };
+        }
         let package_name = std::env::var("CDYLIB_NAME").expect("set \
             CYDLIB_NAME envvar to the name of the original Rust crate");
         let output_folder = std::env::var("CDYLIB_ROOT")
@@ -47,6 +58,7 @@ impl CDylibCompiler {
             package_name,
             package_name_c,
             crates: vec![],
+            dummy: false,
         }
     }
 
@@ -56,6 +68,9 @@ impl CDylibCompiler {
         crate_name: &str,
         version: &str,
     ) {
+        if self.dummy {
+            return;
+        }
         self.crates.push(format!("{} = \"{}\"", crate_name, version));
     }
 
@@ -65,6 +80,9 @@ impl CDylibCompiler {
         crate_name: &str,
         kv: Vec<(&str, &str)>,
     ) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         if !kv.is_empty() {
             self.crates.push(format!(
                 "{} = {{ {} }}",
@@ -80,6 +98,9 @@ impl CDylibCompiler {
 
     /// Add a dependency to the generated .rs file e.g., `use <dependency>`.
     pub fn import(&mut self, dependency: &str) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         self.inner.add_dependency(dependency)?;
         Ok(())
     }
@@ -107,6 +128,9 @@ impl CDylibCompiler {
         raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         assert!(struct_ty.is_struct());
         let struct_name = match struct_ty {
             Type::Struct { ref name, .. } => name,
@@ -135,6 +159,9 @@ impl CDylibCompiler {
         raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         assert!(struct_ty.is_struct());
         codegen::add_extern_c_function(
             &mut self.inner,
@@ -158,6 +185,9 @@ impl CDylibCompiler {
         raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         codegen::add_extern_c_function(
             &mut self.inner,
             extern_name,
@@ -195,10 +225,13 @@ impl CDylibCompiler {
     ///     build.rs
     ///     Cargo.toml
     pub fn flush(&mut self) -> Result<()> {
+        if self.dummy {
+            return Ok(());
+        }
         let src_folder = self.package_folder.join("src");
         fs::create_dir_all(&src_folder)?;
 
-        codegen::gen_makefile(&self.package_name, &self.package_folder)?;
+        codegen::gen_makefile(&self.package_folder)?;
         codegen::gen_build_rs(&self.package_name, &self.package_folder)?;
         codegen::gen_cargo_toml(&self.package_name, &self.package_folder,
             &self.crates)?;

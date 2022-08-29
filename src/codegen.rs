@@ -9,13 +9,11 @@ use color_eyre::eyre::{bail, Result};
 use std::{str, path::Path};
 
 pub fn gen_makefile(
-    package_name: &str,
     package_folder: &Path,
 ) -> Result<()> {
     let mut compiler = SerializationCompiler::new();
     compiler.add_line("build:")?;
-    compiler.add_line(&format!("\tCDYLIB_NAME={} CDYLIB_ROOT={:?} cargo b \
-        --release", package_name, package_folder))?;
+    compiler.add_line(&format!("\tCDYLIB=1 cargo b --release"))?;
     compiler.flush(&package_folder.join("Makefile"))?;
     Ok(())
 }
