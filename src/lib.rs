@@ -198,6 +198,7 @@ impl CDylibCompiler {
         let src_folder = self.package_folder.join("src");
         fs::create_dir_all(&src_folder)?;
 
+        codegen::gen_makefile(&self.package_name, &self.package_folder)?;
         codegen::gen_build_rs(&self.package_name, &self.package_folder)?;
         codegen::gen_cargo_toml(&self.package_name, &self.package_folder,
             &self.crates)?;
