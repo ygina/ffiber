@@ -1,5 +1,5 @@
 use ffiber::CDylibCompiler;
-use ffiber::types::{ArgType, SelfArgType};
+use ffiber::types::{Type, SelfType};
 use color_eyre::eyre::Result;
 
 fn main() -> Result<()> {
@@ -20,8 +20,8 @@ fn main() -> Result<()> {
 
     // Bump
     compiler.add_extern_c_function(
-        ArgType::new_struct("Bump"),
-        SelfArgType::Mut,
+        Type::new_struct("Bump"),
+        SelfType::Mut,
         "reset",
         vec![],
         None,
@@ -29,56 +29,56 @@ fn main() -> Result<()> {
     )?;
 
     // ReceivedPkt
-    let struct_ty = ArgType::Struct {
+    let struct_ty = Type::Struct {
         name: "ReceivedPkt".to_string(),
-        params: vec![Box::new(ArgType::new_struct("Mlx5Connection"))],
+        params: vec![Box::new(Type::new_struct("Mlx5Connection"))],
     };
     compiler.add_extern_c_function(
         struct_ty.clone(),
-        SelfArgType::Value,
+        SelfType::Value,
         "msg_id",
         vec![],
-        Some(ArgType::Primitive("u32".to_string())),
+        Some(Type::Primitive("u32".to_string())),
         false,
     )?;
     compiler.add_extern_c_function(
         struct_ty.clone(),
-        SelfArgType::Value,
+        SelfType::Value,
         "conn_id",
         vec![],
-        Some(ArgType::Primitive("usize".to_string())),
+        Some(Type::Primitive("usize".to_string())),
         false,
     )?;
 
     // Mlx5Connection
     compiler.add_extern_c_function(
-        ArgType::new_struct("Mlx5Connection"),
-        SelfArgType::Mut,
+        Type::new_struct("Mlx5Connection"),
+        SelfType::Mut,
         "set_copying_threshold",
         vec![
-            ("copying_threshold", ArgType::Primitive("usize".to_string())),
+            ("copying_threshold", Type::Primitive("usize".to_string())),
         ],
         None,
         false,
     )?;
     compiler.add_extern_c_function(
-        ArgType::new_struct("Mlx5Connection"),
-        SelfArgType::Mut,
+        Type::new_struct("Mlx5Connection"),
+        SelfType::Mut,
         "add_memory_pool",
         vec![
-            ("buf_size", ArgType::Primitive("usize".to_string())),
-            ("min_elts", ArgType::Primitive("usize".to_string())),
+            ("buf_size", Type::Primitive("usize".to_string())),
+            ("min_elts", Type::Primitive("usize".to_string())),
         ],
         None,
         true,
     )?;
     compiler.add_extern_c_function(
-        ArgType::new_struct("Mlx5Connection"),
-        SelfArgType::Mut,
+        Type::new_struct("Mlx5Connection"),
+        SelfType::Mut,
         "add_tx_mempool",
         vec![
-            ("size", ArgType::Primitive("usize".to_string())),
-            ("min_elts", ArgType::Primitive("usize".to_string())),
+            ("size", Type::Primitive("usize".to_string())),
+            ("min_elts", Type::Primitive("usize".to_string())),
         ],
         None,
         true,

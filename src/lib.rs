@@ -4,7 +4,7 @@ pub mod types;
 
 use std::{fs, path::{Path, PathBuf}};
 use color_eyre::eyre::{Result, ErrReport};
-use types::{ArgType, SelfArgType, DerivedTrait};
+use types::{Type, SelfType, DerivedTrait};
 
 pub struct CDylibCompiler {
     pub inner: compiler::SerializationCompiler,
@@ -85,16 +85,16 @@ impl CDylibCompiler {
     /// TODO: Parse these options directly from the function specification.
     pub fn add_extern_c_function(
         &mut self,
-        struct_ty: ArgType,
-        self_ty: SelfArgType,
+        struct_ty: Type,
+        self_ty: SelfType,
         func_call: &str,
-        raw_args: Vec<(&str, ArgType)>,
-        raw_ret: Option<ArgType>,
+        raw_args: Vec<(&str, Type)>,
+        raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
         assert!(struct_ty.is_struct());
         let struct_name = match struct_ty {
-            ArgType::Struct { ref name, .. } => name,
+            Type::Struct { ref name, .. } => name,
             _ => unreachable!(),
         };
         codegen::add_extern_c_function(
@@ -113,11 +113,11 @@ impl CDylibCompiler {
     pub fn add_extern_c_function_with_name(
         &mut self,
         extern_name: &str,
-        struct_ty: ArgType,
-        self_ty: SelfArgType,
+        struct_ty: Type,
+        self_ty: SelfType,
         func_call: &str,
-        raw_args: Vec<(&str, ArgType)>,
-        raw_ret: Option<ArgType>,
+        raw_args: Vec<(&str, Type)>,
+        raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
         assert!(struct_ty.is_struct());
@@ -139,8 +139,8 @@ impl CDylibCompiler {
         &mut self,
         extern_name: &str,
         func_call: &str,
-        raw_args: Vec<(&str, ArgType)>,
-        raw_ret: Option<ArgType>,
+        raw_args: Vec<(&str, Type)>,
+        raw_ret: Option<Type>,
         use_error_code: bool,
     ) -> Result<()> {
         codegen::add_extern_c_function(
@@ -166,7 +166,7 @@ impl CDylibCompiler {
     pub fn add_opaque_struct(
         &mut self,
         _struct_name: &str,
-        _fields: Vec<(&str, ArgType)>,
+        _fields: Vec<(&str, Type)>,
         _traits: Vec<DerivedTrait>,
     ) -> Result<()> {
         unimplemented!()

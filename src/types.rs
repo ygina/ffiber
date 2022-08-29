@@ -1,15 +1,15 @@
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum ArgType {
+pub enum Type {
     Primitive(String),
-    Struct { name: String, params: Vec<Box<ArgType>> },
-    Ref(Box<ArgType>),
-    RefMut(Box<ArgType>),
-    Buffer(Box<ArgType>),
+    Struct { name: String, params: Vec<Box<Type>> },
+    Ref(Box<Type>),
+    RefMut(Box<Type>),
+    Buffer(Box<Type>),
     Enum { name: String, variants: Vec<String> },
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum SelfArgType {
+pub enum SelfType {
     None,
     Value,
     Ref,
@@ -25,20 +25,20 @@ pub enum DerivedTrait {
     Eq,
 }
 
-impl SelfArgType {
+impl SelfType {
     pub fn is_ref(&self) -> bool {
         match self {
-            SelfArgType::None => false,
-            SelfArgType::Value => false,
-            SelfArgType::Ref => true,
-            SelfArgType::RefMut => true,
-            SelfArgType::Mut => false,
+            SelfType::None => false,
+            SelfType::Value => false,
+            SelfType::Ref => true,
+            SelfType::RefMut => true,
+            SelfType::Mut => false,
         }
     }
 
     pub fn is_none(&self) -> bool {
         match self {
-            SelfArgType::None => true,
+            SelfType::None => true,
             _ => false,
         }
     }
@@ -48,69 +48,69 @@ impl SelfArgType {
     }
 }
 
-impl ArgType {
+impl Type {
     pub fn new_struct(struct_name: &str) -> Self {
-        ArgType::Struct {
+        Type::Struct {
             name: struct_name.to_string(),
             params: vec![],
         }
     }
 
     pub fn new_ref(struct_name: &str) -> Self {
-        ArgType::Ref(Box::new(ArgType::new_struct(struct_name)))
+        Type::Ref(Box::new(Type::new_struct(struct_name)))
     }
 
     pub fn new_ref_mut(struct_name: &str) -> Self {
-        ArgType::RefMut(Box::new(ArgType::new_struct(struct_name)))
+        Type::RefMut(Box::new(Type::new_struct(struct_name)))
     }
 
     pub fn new_u8_buffer() -> Self {
-        ArgType::Buffer(Box::new(ArgType::Primitive("u8".to_string())))
+        Type::Buffer(Box::new(Type::Primitive("u8".to_string())))
     }
 
     pub fn is_buffer(&self) -> bool {
         match self {
-            ArgType::Buffer(_) => true,
+            Type::Buffer(_) => true,
             _ => false,
         }
     }
 
     pub fn is_struct(&self) -> bool {
         match self {
-            ArgType::Struct{..} => true,
+            Type::Struct{..} => true,
             _ => false,
         }
     }
 
     pub fn to_c_str(&self) -> String {
         match self {
-            ArgType::Primitive(ty) => ty.clone(),
-            ArgType::Struct{..} => "*mut ::std::os::raw::c_void".to_string(),
-            ArgType::Ref(_) => "*mut ::std::os::raw::c_void".to_string(),
-            ArgType::RefMut(_) => "*mut ::std::os::raw::c_void".to_string(),
-            ArgType::Buffer(ty) => format!("*const {}", ty.to_c_str()),
-            ArgType::Enum{..} => "usize".to_string(),
+            Type::Primitive(ty) => ty.clone(),
+            Type::Struct{..} => "*mut ::std::os::raw::c_void".to_string(),
+            Type::Ref(_) => "*mut ::std::os::raw::c_void".to_string(),
+            Type::RefMut(_) => "*mut ::std::os::raw::c_void".to_string(),
+            Type::Buffer(ty) => format!("*const {}", ty.to_c_str()),
+            Type::Enum{..} => "usize".to_string(),
         }
     }
 
     pub fn to_rust_str(&self) -> String {
         match self {
-            ArgType::Primitive(ty) => ty.clone(),
-            ArgType::Struct { name, params } => if params.is_empty() {
+            Type::Primitive(ty) => ty.clone(),
+            Type::Struct { name, params } => if params.is_empty() {
                 name.clone()
             } else {
                 format!("{}<{}>", &name, params.iter().map(|p| p.to_rust_str())
                     .collect::<Vec<_>>().join(", "))
             },
-            ArgType::Ref(ty) => format!("&{}", &ty.to_rust_str()),
-            ArgType::RefMut(ty) => format!("&mut {}", &ty.to_rust_str()),
-            ArgType::Buffer(ty) => format!("*const {}", match &**ty {
-                ArgType::Ref(inner_ty) => format!("*const {}", inner_ty.to_rust_str()),
-                ArgType::RefMut(inner_ty) => format!("*mut {}", inner_ty.to_rust_str()),
-                ArgType::Buffer(_) => unimplemented!(),
+            Type::Ref(ty) => format!("&{}", &ty.to_rust_str()),
+            Type::RefMut(ty) => format!("&mut {}", &ty.to_rust_str()),
+            Type::Buffer(ty) => format!("*const {}", match &**ty {
+                Type::Ref(inner_ty) => format!("*const {}", inner_ty.to_rust_str()),
+                Type::RefMut(inner_ty) => format!("*mut {}", inner_ty.to_rust_str()),
+                Type::Buffer(_) => unimplemented!(),
                 ty => ty.to_rust_str(),
             }),
-            ArgType::Enum { name, .. } => name.clone(),
+            Type::Enum { name, .. } => name.clone(),
         }
     }
 }

@@ -3,7 +3,7 @@ use super::{
         Context, FunctionArg, FunctionContext, SerializationCompiler, CArgInfo,
         MatchContext,
     },
-    types::{ArgType, SelfArgType},
+    types::{Type, SelfType},
 };
 use color_eyre::eyre::{bail, Result};
 use std::{str, path::Path};
@@ -81,10 +81,10 @@ pub fn gen_cargo_toml(
 pub fn add_extern_c_function(
     compiler: &mut SerializationCompiler,
     extern_name: &str,
-    struct_ty: Option<(ArgType, SelfArgType)>,
+    struct_ty: Option<(Type, SelfType)>,
     func_name: &str,
-    raw_args: Vec<(&str, ArgType)>,
-    raw_ret: Option<ArgType>,
+    raw_args: Vec<(&str, Type)>,
+    raw_ret: Option<Type>,
     use_error_code: bool,
 ) -> Result<()> {
     let args = {
@@ -116,24 +116,24 @@ pub fn add_extern_c_function(
     if let Some((ref struct_ty, ref self_ty)) = struct_ty {
         let struct_name = struct_ty.to_rust_str();
         match self_ty {
-            SelfArgType::None => {}
-            SelfArgType::Value => {
+            SelfType::None => {}
+            SelfType::Value => {
                 compiler.add_unsafe_def_with_let(false, None, "self_",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
             }
-            SelfArgType::Ref => {
+            SelfType::Ref => {
                 compiler.add_unsafe_def_with_let(false, None, "self_box",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
                 compiler.add_unsafe_def_with_let(false, None, "self_",
                     "&**self_box")?;
             }
-            SelfArgType::RefMut => {
+            SelfType::RefMut => {
                 compiler.add_unsafe_def_with_let(false, None, "self_box",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
                 compiler.add_unsafe_def_with_let(false, None, "self_",
                     "&mut **self_box")?;
             }
-            SelfArgType::Mut => {
+            SelfType::Mut => {
                 compiler.add_unsafe_def_with_let(true, None, "self_",
                     &format!("Box::from_raw(self_ as *mut {})", struct_name))?;
             }
@@ -144,24 +144,24 @@ pub fn add_extern_c_function(
     for (i, (arg_name, arg_ty)) in raw_args.iter().enumerate() {
         let left = format!("arg{}", i);
         let right = match arg_ty {
-            ArgType::Primitive(_) => arg_name.to_string(),
-            ArgType::Struct{..} => format!(
+            Type::Primitive(_) => arg_name.to_string(),
+            Type::Struct{..} => format!(
                 "unsafe {{ *Box::from_raw({} as *mut {}) }}",
                 arg_name, arg_ty.to_rust_str(),
             ),
-            ArgType::Ref(ty) => format!(
+            Type::Ref(ty) => format!(
                 "unsafe {{ Box::from_raw({} as *mut {}) }}",
                 arg_name, ty.to_rust_str(),
             ),
-            ArgType::RefMut(ty) => format!(
+            Type::RefMut(ty) => format!(
                 "{} as *mut {}",
                 arg_name, ty.to_rust_str(),
             ),
-            ArgType::Buffer(_) => format!(
+            Type::Buffer(_) => format!(
                 "unsafe {{ std::slice::from_raw_parts({} as {}, {}_len) }}",
                 arg_name, arg_ty.to_rust_str(), arg_name,
             ),
-            ArgType::Enum { name, variants } => {
+            Type::Enum { name, variants } => {
                 let mut variant_nums = (0..variants.len())
                     .map(|i| i.to_string()).collect::<Vec<_>>();
                 let mut variants = variants.into_iter()
@@ -185,15 +185,15 @@ pub fn add_extern_c_function(
     let args = raw_args.iter()
         .enumerate()
         .map(|(i, (_, arg_ty))| match arg_ty {
-            ArgType::Ref(_) => format!("&arg{}", i),
-            ArgType::RefMut(_) => format!("unsafe {{ &mut *arg{} }}", i),
+            Type::Ref(_) => format!("&arg{}", i),
+            Type::RefMut(_) => format!("unsafe {{ &mut *arg{} }}", i),
             _ => format!("arg{}", i),
         })
         .collect::<Vec<_>>();
     let ret_ty = if let Some(ref ret_ty) = raw_ret {
         match ret_ty {
-            ArgType::Ref(ty) => Some(format!("*const {}", &ty.to_rust_str())),
-            ArgType::RefMut(ty) => Some(format!("*mut {}", &ty.to_rust_str())),
+            Type::Ref(ty) => Some(format!("*const {}", &ty.to_rust_str())),
+            Type::RefMut(ty) => Some(format!("*mut {}", &ty.to_rust_str())),
             _ => None,
         }
     } else {
@@ -206,7 +206,7 @@ pub fn add_extern_c_function(
             (Some("self_".to_string()), func_name.to_string())
         } else {
             let (struct_name, struct_params) = match struct_ty {
-                ArgType::Struct { ref name, ref params } => (name, params),
+                Type::Struct { ref name, ref params } => (name, params),
                 _ => bail!("Expecting Struct argument type as struct_ty"),
             };
             (None, format!(
@@ -254,19 +254,19 @@ pub fn add_extern_c_function(
     // Marshall return value into C type
     if let Some(ret_ty) = &raw_ret {
         match ret_ty {
-            ArgType::Primitive(_) => {
+            Type::Primitive(_) => {
                 compiler.add_unsafe_set("return_ptr", "value")?;
             }
-            ArgType::Struct{..} => {
+            Type::Struct{..} => {
                 compiler.add_func_call_with_let("value", None, None,
                    "Box::into_raw", vec!["Box::new(value)".to_string()],
                    false)?;
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             }
-            ArgType::Ref(_) | ArgType::RefMut(_) => {
+            Type::Ref(_) | Type::RefMut(_) => {
                 compiler.add_unsafe_set("return_ptr", "value as _")?;
             },
-            ArgType::Buffer(ty) => {
+            Type::Buffer(ty) => {
                 compiler.add_def_with_let(false,
                     Some(format!("Vec<*mut {}>", ty.to_rust_str())),
                     "value",
@@ -277,7 +277,7 @@ pub fn add_extern_c_function(
                 compiler.add_unsafe_set("return_ptr", "(*value).as_ptr() as _")?;
                 compiler.add_unsafe_set("return_len_ptr", "(*value).len()")?;
             },
-            ArgType::Enum{..} => unimplemented!(),
+            Type::Enum{..} => unimplemented!(),
         }
     }
 
@@ -294,14 +294,14 @@ pub fn add_extern_c_function(
     }
     for (i, (_, arg_ty)) in raw_args.iter().enumerate() {
         match arg_ty {
-            ArgType::Primitive(_) => { continue; },
-            ArgType::Struct{..} => { continue; },
-            ArgType::Ref(_) => {
+            Type::Primitive(_) => { continue; },
+            Type::Struct{..} => { continue; },
+            Type::Ref(_) => {
                 compiler.add_func_call(None, "Box::into_raw", vec![format!("arg{}", i)], false)?;
             },
-            ArgType::RefMut(_) => { continue; },
-            ArgType::Buffer(_) => { continue; },
-            ArgType::Enum{..} => { continue; },
+            Type::RefMut(_) => { continue; },
+            Type::Buffer(_) => { continue; },
+            Type::Enum{..} => { continue; },
         };
     }
 
