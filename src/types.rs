@@ -190,12 +190,26 @@ impl From<syn::Type> for Type {
                         syn::PathArguments::None => unreachable!(),
                         syn::PathArguments::Parenthesized(_) => unreachable!(),
                         syn::PathArguments::AngleBracketed(args) => {
-                            args.args.into_iter().map(|arg| match arg {
-                                syn::GenericArgument::Type(ty) => {
-                                    Box::new(Type::from(ty))
+                            // special case results that return nothing
+                            let mut result_case = false;
+                            if name == "Result" {
+                                if let Some(syn::GenericArgument::Type(syn::Type::Tuple(inner))) = args.args.iter().next() {
+                                    if inner.elems.is_empty() {
+                                        result_case = true;
+                                    }
                                 }
-                                _ => unimplemented!()
-                            }).collect::<Vec<_>>()
+                            }
+                            if result_case {
+                                vec![]
+                            } else {
+                                args.args.into_iter()
+                                    .map(|arg| match arg {
+                                        syn::GenericArgument::Type(ty) => ty,
+                                        _ => unimplemented!()
+                                    })
+                                    .map(|ty| Box::new(Type::from(ty)))
+                                    .collect::<Vec<_>>()
+                            }
                         }
                     };
                     Type::Struct { name, args }
@@ -212,10 +226,19 @@ impl From<syn::Type> for Type {
 }
 
 impl Type {
-    pub fn from_return_type(ty: syn::ReturnType) -> Option<Self> {
+    pub fn parse_return_type(ty: syn::ReturnType) -> (Option<Self>, bool) {
         match ty {
-            syn::ReturnType::Default => None,
-            syn::ReturnType::Type(_, ty) => Some(Self::from(*ty)),
+            syn::ReturnType::Default => (None, false),
+            syn::ReturnType::Type(_, ty) => {
+                let ret_ty = Self::from(*ty);
+                if let Type::Struct { ref name, ref args } = ret_ty {
+                    if name == "Result" {
+                        let ret_ty = args.iter().next().map(|ty| *ty.clone());
+                        return (ret_ty, true);
+                    }
+                }
+                (Some(ret_ty), false)
+            }
         }
     }
 
