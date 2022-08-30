@@ -115,8 +115,8 @@ impl Type {
     }
 }
 
-static PRIMITIVE_TYPES: [&str; 9] = [
-    "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "bool",
+static PRIMITIVE_TYPES: [&str; 10] = [
+    "usize", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "bool",
 ];
 
 impl From<syn::Receiver> for SelfType {
